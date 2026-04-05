@@ -35,8 +35,7 @@ defmodule Elr.CLI do
         handle_cache(opts[:cache])
 
       args == [] ->
-        Output.error("no reference provided. Run `elr --help` for usage.")
-        exit({:shutdown, 1})
+        print_help()
 
       true ->
         [ref_string | rest_argv] = args

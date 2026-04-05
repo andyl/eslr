@@ -3,8 +3,8 @@
 Load and run Elixir scripts (`.exs`) and escripts from Hex packages,
 git repos, or direct URLs.  
 
-Inspired by `npx`, built for Elixir's scripting strengths. Just point `elr` at
-a reference and go.  
+Pronounced `e-lr`, inspired by [npx](https://docs.npmjs.com/cli/v11/commands/npx), 
+built for Elixir. Just point `elr` at a reference and go.  
 
 ## Installation
 
@@ -20,10 +20,7 @@ a reference and go.
 ```bash
 elr <reference> [args...]
 ```
-
-Example Commands: 
-
-| Src    | Type    | Command                                                                |
+| Src    | Type    | Example Command                                                        |
 |--------|---------|------------------------------------------------------------------------|
 | Hex    | Escript | `elr benchee`                                                          |
 | Hex    | Escript | `elr req@0.5.0 get https://httpbin.org/json`                           |
