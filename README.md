@@ -3,44 +3,16 @@
 Load and run Elixir scripts (`.exs`) and escripts from Hex packages,
 git repos, or direct URLs.  
 
-Just point `elr` at a reference and go.  Inspired by `npx`, built for Elixir's
-scripting strengths.
-
-## Features
-
-- Run Hex packages with a single command (`elr benchee`)
-- Support for specific versions, git repositories, and direct `.exs` scripts
-- Automatic dependency loading via `Mix.install/2`
-- Smart entrypoint detection (escripts preferred when available)
-- Local caching for fast repeated runs
-- Works with local `.exs` files too
+Inspired by `npx`, built for Elixir's scripting strengths. Just point `elr` at
+a reference and go.  
 
 ## Installation
 
 ```bash
-# now
-mix escript.install github:andyl/elr
-
-# future
-mix escript.install hex elr
-```
-
-Make sure `~/.mix/escripts` is in your `$PATH`:
-
-```bash
-export PATH="$HOME/.mix/escripts:$PATH"
-```
-
-Verify:
-
-```bash
-elr --help
-```
-
-### Updating
-
-```bash
-mix escript.install hex elr --force
+> mix escript.install github:andyl/elr      # install
+> export PATH="$HOME/.mix/escripts:$PATH"   # update $PATH
+> elr --help                                # verify 
+> mix escript.install hex elr --force       # update 
 ```
 
 ## Usage
@@ -49,23 +21,16 @@ mix escript.install hex elr --force
 elr <reference> [args...]
 ```
 
-## Examples
+Example Commands: 
 
-```bash
-# Hex packages
-elr benchee
-elr req@0.5.0 get https://httpbin.org/json
-
-# GitHub repositories
-elr github:livebook-dev/livebook
-elr github:wojtekmach/mix_install_examples#main
-
-# Direct remote script
-elr https://raw.githubusercontent.com/user/repo/main/tool.exs --help
-
-# Local script
-elr ./my_tool.exs --verbose
-```
+| Src    | Type    | Command                                                                |
+|--------|---------|------------------------------------------------------------------------|
+| Hex    | Escript | `elr benchee`                                                          |
+| Hex    | Escript | `elr req@0.5.0 get https://httpbin.org/json`                           |
+| GitHub | Escript | `elr github:livebook-dev/livebook`                                     |
+| GitHub | Script  | `elr github:wojtekmach/mix_install_examples#main`                      |
+| URL    | Script  | `elr https://raw.githubusercontent.com/user/repo/main/tool.exs --help` |
+| Local  | Script  | `elr ./my_tool.exs --verbose`                                          |
 
 ## Reference Types
 
