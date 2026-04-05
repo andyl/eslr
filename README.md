@@ -1,10 +1,7 @@
 # elr — Elixir Load & Run
 
 Quickly load and run Elixir scripts (`.exs`) and escripts from Hex packages,
-git repos, or direct URLs — with automatic dependency fetching.
-
-No need to create a full Mix project or manually run `Mix.install/2` every
-time. Just point `elr` at a reference and go.
+git repos, or direct URLs.  Just point `elr` at a reference and go.
 
 Inspired by `npx`, built for Elixir's scripting strengths.
 
