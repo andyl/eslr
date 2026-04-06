@@ -6,10 +6,10 @@ defmodule Eslr.CacheTest do
   setup do
     tmp_dir = Path.join(System.tmp_dir!(), "elr_cache_test_#{:rand.uniform(100_000)}")
     File.mkdir_p!(tmp_dir)
-    System.put_env("ELR_CACHE_DIR", tmp_dir)
+    System.put_env("ESLR_CACHE_DIR", tmp_dir)
 
     on_exit(fn ->
-      System.delete_env("ELR_CACHE_DIR")
+      System.delete_env("ESLR_CACHE_DIR")
       File.rm_rf!(tmp_dir)
     end)
 
@@ -17,21 +17,21 @@ defmodule Eslr.CacheTest do
   end
 
   describe "dir/0" do
-    test "uses ELR_CACHE_DIR when set", %{tmp_dir: tmp_dir} do
+    test "uses ESLR_CACHE_DIR when set", %{tmp_dir: tmp_dir} do
       assert Cache.dir() == tmp_dir
     end
 
     test "falls back to XDG_CACHE_HOME" do
-      System.delete_env("ELR_CACHE_DIR")
+      System.delete_env("ESLR_CACHE_DIR")
       System.put_env("XDG_CACHE_HOME", "/tmp/xdg_test")
-      assert Cache.dir() == "/tmp/xdg_test/elr"
+      assert Cache.dir() == "/tmp/xdg_test/eslr"
       System.delete_env("XDG_CACHE_HOME")
     end
 
-    test "falls back to ~/.cache/elr" do
-      System.delete_env("ELR_CACHE_DIR")
+    test "falls back to ~/.cache/eslr" do
+      System.delete_env("ESLR_CACHE_DIR")
       System.delete_env("XDG_CACHE_HOME")
-      assert Cache.dir() == Path.join(System.user_home!(), ".cache/elr")
+      assert Cache.dir() == Path.join(System.user_home!(), ".cache/eslr")
     end
   end
 

@@ -65,6 +65,7 @@ defmodule Eslr.Datastore do
         "source" => metadata[:source] || metadata["source"],
         "description" => metadata[:description] || metadata["description"],
         "deps" => metadata[:deps] || metadata["deps"] || [],
+        "eslr_command" => metadata[:eslr_command] || metadata["eslr_command"],
         "installed_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
         "run_count" => Map.get(data[key] || %{}, "run_count", 0)
       })
@@ -97,6 +98,31 @@ defmodule Eslr.Datastore do
   end
 
   @doc """
+  Delete a record by key.
+  """
+  @spec delete(String.t()) :: :ok
+  def delete(key) do
+    data = read()
+    write(Map.delete(data, key))
+  end
+
+  @doc """
+  Find a record by script name. Matches against the `name` field,
+  with or without the `.exs` extension. Returns `{:ok, key, record}` or `:miss`.
+  """
+  @spec find_by_name(String.t()) :: {:ok, String.t(), map()} | :miss
+  def find_by_name(name) do
+    candidates = [name, name <> ".exs"]
+
+    read()
+    |> Enum.find_value(:miss, fn {key, record} ->
+      if Map.get(record, "name") in candidates do
+        {:ok, key, record}
+      end
+    end)
+  end
+
+  @doc """
   Return all records.
   """
   @spec list() :: map()
@@ -121,7 +147,7 @@ defmodule Eslr.Datastore do
         |> Enum.map(&String.replace_leading(&1, "#", ""))
         |> case do
           [] -> nil
-          lines -> Enum.join(lines, "\n")
+          lines -> Enum.join(lines, " ")
         end
 
       _ ->
@@ -136,9 +162,15 @@ defmodule Eslr.Datastore do
   def extract_deps(script_path) do
     case File.read(script_path) do
       {:ok, content} ->
-        Regex.scan(~r/:(\w+)/, content)
-        |> Enum.map(fn [_, name] -> name end)
-        |> Enum.uniq()
+        case Regex.run(~r/Mix\.install\s*\(\s*\[(.*?)\]/s, content) do
+          [_, install_block] ->
+            Regex.scan(~r/[:{](\w+)/, install_block)
+            |> Enum.map(fn [_, name] -> name end)
+            |> Enum.uniq()
+
+          _ ->
+            []
+        end
 
       _ ->
         []

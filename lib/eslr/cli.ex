@@ -9,7 +9,7 @@ defmodule Eslr.CLI do
     help: :boolean,
     version: :boolean,
     verbose: :boolean,
-    no_cache: :boolean,
+    update: :boolean,
     cache: :string,
     find: :boolean
   ]
@@ -35,7 +35,7 @@ defmodule Eslr.CLI do
         IO.puts("eslr #{Eslr.version()}")
 
       opts[:cache] ->
-        handle_cache(opts[:cache])
+        handle_cache(opts[:cache], args)
 
       opts[:find] ->
         ref_string = script_ref || List.first(args)
@@ -67,20 +67,37 @@ defmodule Eslr.CLI do
   end
 
   defp run(ref_string, argv, opts) do
-    with {:ok, ref} <- Ref.parse(ref_string),
-         {:ok, result} <- Loader.load(ref, no_cache: opts[:no_cache] || false) do
-      cache_key = Cache.cache_key(ref)
-      Datastore.record_run(cache_key)
+    case Ref.parse(ref_string) do
+      {:ok, ref} ->
+        run_ref(ref, ref_string, argv, opts)
 
-      case Eslr.Runner.run(result, ref, argv) do
-        :ok ->
-          :ok
+      {:error, _reason} ->
+        case Datastore.find_by_name(ref_string) do
+          {:ok, _key, %{"eslr_command" => "eslr " <> saved_ref}} ->
+            run(saved_ref, argv, opts)
 
-        {:error, reason} ->
-          Output.error(reason)
-          exit({:shutdown, 1})
-      end
-    else
+          _ ->
+            Output.error("unknown script: #{ref_string}")
+            exit({:shutdown, 1})
+        end
+    end
+  end
+
+  defp run_ref(ref, ref_string, argv, opts) do
+    case Loader.load(ref, update: opts[:update] || false, ref_string: ref_string) do
+      {:ok, result} ->
+        cache_key = Cache.cache_key(ref)
+        Datastore.record_run(cache_key)
+
+        case Eslr.Runner.run(result, ref, argv) do
+          :ok ->
+            :ok
+
+          {:error, reason} ->
+            Output.error(reason)
+            exit({:shutdown, 1})
+        end
+
       {:error, reason} ->
         Output.error(reason)
         exit({:shutdown, 1})
@@ -92,11 +109,11 @@ defmodule Eslr.CLI do
     exit({:shutdown, 1})
   end
 
-  defp handle_find(ref_string, opts) do
+  defp handle_find(ref_string, _opts) do
     with {:ok, ref} <- Ref.parse(ref_string) do
       case Eslr.Resolver.resolve(ref) do
         {:clone, url, git_ref} ->
-          find_scripts_in_repo(url, git_ref, opts)
+          find_scripts_in_repo(ref_string, url, git_ref)
 
         _ ->
           Output.error("--find only works with repository references (github: or git+)")
@@ -109,7 +126,9 @@ defmodule Eslr.CLI do
     end
   end
 
-  defp find_scripts_in_repo(url, git_ref, _opts) do
+  defp find_scripts_in_repo(ref_string, url, git_ref) do
+    # Strip any trailing #ref from the ref_string for building output
+    base_ref = String.replace(ref_string, ~r/#.*$/, "")
     tmp_dir = Path.join(System.tmp_dir!(), "eslr_find_#{:rand.uniform(1_000_000)}")
 
     try do
@@ -127,7 +146,8 @@ defmodule Eslr.CLI do
             IO.puts("No valid eslr scripts found.")
           else
             Enum.each(scripts, fn script ->
-              IO.puts(Path.relative_to(script, tmp_dir))
+              path = Path.relative_to(script, tmp_dir)
+              IO.puts("#{base_ref}:#{path}")
             end)
           end
 
@@ -140,7 +160,7 @@ defmodule Eslr.CLI do
     end
   end
 
-  defp handle_cache(subcommand) do
+  defp handle_cache(subcommand, args) do
     case subcommand do
       "dir" ->
         IO.puts(Cache.dir())
@@ -151,11 +171,18 @@ defmodule Eslr.CLI do
             IO.puts("Cache is empty.")
 
           entries ->
-            Enum.each(entries, fn {key, metadata} ->
-              stored = Map.get(metadata, "stored_at", "unknown")
-              IO.puts("#{key}  (stored: #{stored})")
+            ds = Datastore.read()
+
+            Enum.each(entries, fn {key, _metadata} ->
+              IO.puts(display_name(key, ds))
             end)
         end
+
+      "info" ->
+        handle_cache_info(List.first(args))
+
+      "remove" ->
+        handle_cache_remove(List.first(args))
 
       "clean" ->
         Cache.clean()
@@ -166,10 +193,55 @@ defmodule Eslr.CLI do
         Output.info("Old cache entries pruned.")
 
       other ->
-        Output.error("unknown cache subcommand: #{other}")
+        Output.error(
+          "unknown cache subcommand: #{other}. Valid options: dir, list, info, remove, clean, prune"
+        )
+
         exit({:shutdown, 1})
     end
   end
+
+  defp handle_cache_info(nil) do
+    Output.error("--cache info requires a script name")
+    exit({:shutdown, 1})
+  end
+
+  defp handle_cache_info(name) do
+    case Datastore.find_by_name(name) do
+      {:ok, _key, record} ->
+        record
+        |> Enum.sort()
+        |> Enum.each(fn {k, v} ->
+          IO.puts("#{String.pad_trailing(k, 16)} #{format_value(v)}")
+        end)
+
+      :miss ->
+        Output.error("no cached script found for: #{name}")
+        exit({:shutdown, 1})
+    end
+  end
+
+  defp handle_cache_remove(nil) do
+    Output.error("--cache remove requires a script name")
+    exit({:shutdown, 1})
+  end
+
+  defp handle_cache_remove(name) do
+    case Datastore.find_by_name(name) do
+      {:ok, key, _record} ->
+        Cache.delete(key)
+        Datastore.delete(key)
+        Output.info("Removed: #{name}")
+
+      :miss ->
+        Output.error("no cached script found for: #{name}")
+        exit({:shutdown, 1})
+    end
+  end
+
+  defp format_value(nil), do: "~"
+  defp format_value(v) when is_list(v), do: Enum.join(v, ", ")
+  defp format_value(v), do: to_string(v)
 
   defp print_help do
     IO.puts("""
@@ -184,19 +256,21 @@ defmodule Eslr.CLI do
       -h, --help       Show this help
       -v, --version    Show version
       -V, --verbose    Verbose output
-      --no-cache       Skip cache, force fresh fetch
-      --find           List valid scripts in a repository
+      --update         Force fresh fetch, replacing cached version
+      --find REF       List valid scripts in a repository
 
     Cache subcommands:
-      eslr --cache dir     Show cache directory path
-      eslr --cache list    List cached entries
-      eslr --cache clean   Remove all cached entries
-      eslr --cache prune   Remove entries older than 30 days
+      eslr --cache dir          Show cache directory path
+      eslr --cache list         List cached entries
+      eslr --cache info NAME    Show details for a cached script
+      eslr --cache remove NAME  Remove a cached script
+      eslr --cache clean        Remove all cached entries
+      eslr --cache prune        Remove entries older than 30 days
 
     Reference types:
       github:user/repo              GitHub repo (default branch)
       github:user/repo#ref          GitHub repo (specific ref)
-      github:user/repo:path/glob    GitHub repo with script path or glob
+      github:user/repo:path         GitHub repo with script path
       git+https://url               Git repository
       git+https://url#ref           Git repository (specific ref)
       https://url/file.exs          Remote .exs script
@@ -212,5 +286,24 @@ defmodule Eslr.CLI do
       ESLR_CACHE_DIR    Override cache directory
       ESLR_NO_COLOR     Disable colored output
     """)
+  end
+
+  defp display_name(cache_key, datastore) do
+    case Map.get(datastore, cache_key) do
+      %{"name" => name} when is_binary(name) ->
+        script_name = String.replace_suffix(name, ".exs", "")
+        hash = extract_hash(cache_key)
+        "#{script_name}-#{hash}"
+
+      _ ->
+        cache_key
+    end
+  end
+
+  defp extract_hash(cache_key) do
+    case Regex.run(~r/-([0-9a-f]{12})-/, cache_key) do
+      [_, hash] -> String.slice(hash, 0, 5)
+      _ -> "00000"
+    end
   end
 end

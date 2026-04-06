@@ -7,9 +7,9 @@ defmodule Eslr.Cache do
 
   def dir do
     cond do
-      dir = System.get_env("ELR_CACHE_DIR") -> dir
-      xdg = System.get_env("XDG_CACHE_HOME") -> Path.join(xdg, "elr")
-      true -> Path.join(System.user_home!(), ".cache/elr")
+      dir = System.get_env("ESLR_CACHE_DIR") -> dir
+      xdg = System.get_env("XDG_CACHE_HOME") -> Path.join(xdg, "eslr")
+      true -> Path.join(System.user_home!(), ".cache/eslr")
     end
   end
 

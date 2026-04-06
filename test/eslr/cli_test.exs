@@ -3,10 +3,23 @@ defmodule Eslr.CLITest do
 
   import ExUnit.CaptureIO
 
+  setup do
+    tmp_dir = Path.join(System.tmp_dir!(), "eslr_cli_test_#{:rand.uniform(100_000)}")
+    File.mkdir_p!(tmp_dir)
+    System.put_env("ESLR_CACHE_DIR", tmp_dir)
+
+    on_exit(fn ->
+      System.delete_env("ESLR_CACHE_DIR")
+      File.rm_rf!(tmp_dir)
+    end)
+
+    %{tmp_dir: tmp_dir}
+  end
+
   describe "--help" do
     test "prints help text" do
       output = capture_io(fn -> Eslr.CLI.main(["--help"]) end)
-      assert output =~ "elr — Elixir Load & Run"
+      assert output =~ "eslr — Elixir Script Load & Run"
       assert output =~ "Usage:"
       assert output =~ "--verbose"
       assert output =~ "--find"
@@ -16,7 +29,7 @@ defmodule Eslr.CLITest do
   describe "--version" do
     test "prints version" do
       output = capture_io(fn -> Eslr.CLI.main(["--version"]) end)
-      assert output =~ "elr #{Eslr.version()}"
+      assert output =~ "eslr #{Eslr.version()}"
     end
   end
 
@@ -60,7 +73,7 @@ defmodule Eslr.CLITest do
 
     test "elr options before -- are consumed by elr" do
       output = capture_io(fn -> Eslr.CLI.main(["--help", "--", "somescript.exs"]) end)
-      assert output =~ "elr — Elixir Load & Run"
+      assert output =~ "eslr — Elixir Script Load & Run"
     end
   end
 
@@ -78,7 +91,7 @@ defmodule Eslr.CLITest do
       assert output =~ "error:"
     end
 
-    test "hex package reference produces helpful error" do
+    test "unknown script name produces helpful error" do
       output =
         capture_io(:stderr, fn ->
           try do
@@ -88,14 +101,14 @@ defmodule Eslr.CLITest do
           end
         end)
 
-      assert output =~ "Hex package references are not supported"
+      assert output =~ "unknown script: jason"
     end
   end
 
   describe "no arguments" do
     test "prints help when no args given" do
       output = capture_io(fn -> Eslr.CLI.main([]) end)
-      assert output =~ "elr — Elixir Load & Run"
+      assert output =~ "eslr — Elixir Script Load & Run"
     end
   end
 end

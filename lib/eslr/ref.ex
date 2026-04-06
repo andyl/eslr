@@ -21,7 +21,7 @@ defmodule Eslr.Ref do
   Parse order:
   1. Starts with `https://` and ends with `.exs` → remote script
   2. Starts with `https://` or `http://` → error
-  3. Starts with `github:` → GitHub shorthand (with optional path/glob and ref)
+  3. Starts with `github:` → GitHub shorthand (with optional path and ref)
   4. Starts with `git+` → git URL
   5. Starts with `./` or `/` or ends with `.exs` → local file
   6. Everything else → error (Hex packages not supported)
@@ -70,7 +70,7 @@ defmodule Eslr.Ref do
         [main, ref] -> {main, ref}
       end
 
-    # Split on : to separate repo from script path/glob
+    # Split on : to separate repo from script path
     case String.split(main, ":", parts: 2) do
       [repo] -> build_github(repo, nil, git_ref)
       [repo, script_path] -> build_github(repo, script_path, git_ref)
