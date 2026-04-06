@@ -16,10 +16,6 @@ defmodule Elr.RefTest do
       assert {:ok, %Ref{type: :local, path: "script.exs"}} = Ref.parse("script.exs")
     end
 
-    test ".escript extension" do
-      assert {:ok, %Ref{type: :local, path: "./my_tool.escript"}} = Ref.parse("./my_tool.escript")
-    end
-
     test "name is extracted from basename" do
       assert {:ok, %Ref{name: "script"}} = Ref.parse("./dir/script.exs")
     end
@@ -55,6 +51,38 @@ defmodule Elr.RefTest do
                Ref.parse("github:user/repo#v1.0")
     end
 
+    test "github:user/repo:path" do
+      assert {:ok,
+              %Ref{
+                type: :github,
+                name: "repo",
+                url: "user/repo",
+                script_path: "scripts/run.exs"
+              }} = Ref.parse("github:user/repo:scripts/run.exs")
+    end
+
+    test "github:user/repo:glob#ref" do
+      assert {:ok,
+              %Ref{
+                type: :github,
+                name: "repo",
+                url: "user/repo",
+                script_path: "**/run.exs",
+                git_ref: "main"
+              }} = Ref.parse("github:user/repo:**/run.exs#main")
+    end
+
+    test "github:user/repo:glob without ref" do
+      assert {:ok,
+              %Ref{
+                type: :github,
+                name: "repo",
+                url: "user/repo",
+                script_path: "lib/**/script.exs",
+                git_ref: nil
+              }} = Ref.parse("github:user/repo:lib/**/script.exs")
+    end
+
     test "invalid github reference (no slash)" do
       assert {:error, "invalid GitHub reference:" <> _} = Ref.parse("github:noslash")
     end
@@ -85,22 +113,25 @@ defmodule Elr.RefTest do
     end
   end
 
-  describe "Hex packages" do
-    test "bare package name" do
-      assert {:ok, %Ref{type: :hex, name: "jason", version: nil}} = Ref.parse("jason")
+  describe "Hex package rejection" do
+    test "bare package name returns error" do
+      assert {:error, msg} = Ref.parse("jason")
+      assert msg =~ "Hex package references are not supported"
     end
 
-    test "package with version" do
-      assert {:ok, %Ref{type: :hex, name: "jason", version: "~> 1.4"}} =
-               Ref.parse("jason@~> 1.4")
+    test "package with version returns error" do
+      assert {:error, msg} = Ref.parse("jason@~> 1.4")
+      assert msg =~ "Hex package references are not supported"
     end
 
-    test "invalid package name" do
-      assert {:error, "invalid Hex package name:" <> _} = Ref.parse("Invalid-Name")
+    test "invalid name returns error" do
+      assert {:error, msg} = Ref.parse("Invalid-Name")
+      assert msg =~ "Hex package references are not supported"
     end
 
-    test "empty string" do
-      assert {:error, "invalid Hex package name:" <> _} = Ref.parse("")
+    test "empty string returns error" do
+      assert {:error, msg} = Ref.parse("")
+      assert msg =~ "Hex package references are not supported"
     end
   end
 end

@@ -1,49 +1,57 @@
 defmodule Elr.Loader do
   @moduledoc """
-  Clones repos, downloads scripts, and builds escripts. Uses cache when available.
+  Clones repos, downloads scripts, and locates valid scripts. Uses cache when available.
   """
 
-  alias Elr.{Cache, Http, Output, Ref, Resolver}
+  alias Elr.{Cache, Datastore, Http, Output, Ref, Resolver, Script}
 
-  @spec load(Ref.t(), keyword()) ::
-          {:ok, {:escript, String.t()} | {:script, String.t()}} | {:error, String.t()}
+  @spec load(Ref.t(), keyword()) :: {:ok, {:script, String.t()}} | {:error, String.t()}
   def load(%Ref{} = ref, opts \\ []) do
     no_cache = Keyword.get(opts, :no_cache, false)
 
     case Resolver.resolve(ref) do
       {:clone, url, git_ref} ->
-        clone_and_build(ref, url, git_ref, no_cache)
+        clone_and_find_script(ref, url, git_ref, no_cache)
 
       {:script, url} ->
         download_script(ref, url, no_cache)
 
       {:local, path} ->
-        if File.exists?(path) do
-          {:ok, {:script, Path.expand(path)}}
-        else
-          {:error, "file not found: #{path}"}
-        end
+        load_local(path)
     end
   end
 
-  defp clone_and_build(ref, url, git_ref, no_cache) do
+  defp load_local(path) do
+    expanded = Path.expand(path)
+
+    if File.exists?(expanded) do
+      case Script.validate(expanded) do
+        {:ok, _} -> {:ok, {:script, expanded}}
+        {:error, reason} -> {:error, reason}
+      end
+    else
+      {:error, "file not found: #{path}"}
+    end
+  end
+
+  defp clone_and_find_script(ref, url, git_ref, no_cache) do
     cache_key = Cache.cache_key(ref)
 
     unless no_cache do
-      case find_cached_escript(cache_key) do
-        {:ok, escript_path} ->
-          Output.verbose("Using cached escript: #{escript_path}")
-          {:ok, {:escript, escript_path}}
+      case find_cached_script(cache_key) do
+        {:ok, script_path} ->
+          Output.verbose("Using cached script: #{script_path}")
+          {:ok, {:script, script_path}}
 
         :miss ->
-          do_clone_and_build(ref, url, git_ref, cache_key)
+          do_clone_and_find_script(ref, url, git_ref, cache_key)
       end
     else
-      do_clone_and_build(ref, url, git_ref, cache_key)
+      do_clone_and_find_script(ref, url, git_ref, cache_key)
     end
   end
 
-  defp do_clone_and_build(ref, url, git_ref, cache_key) do
+  defp do_clone_and_find_script(ref, url, git_ref, cache_key) do
     Output.verbose("Cloning #{url}...")
 
     tmp_dir = Path.join(System.tmp_dir!(), "elr_build_#{:rand.uniform(1_000_000)}")
@@ -57,7 +65,7 @@ defmodule Elr.Loader do
 
       case System.cmd("git", clone_args, stderr_to_stdout: true) do
         {_, 0} ->
-          build_escript(ref, tmp_dir, cache_key)
+          find_script_in_repo(ref, tmp_dir, cache_key)
 
         {output, _} ->
           {:error, "git clone failed: #{String.trim(output)}"}
@@ -67,55 +75,90 @@ defmodule Elr.Loader do
     end
   end
 
-  defp build_escript(ref, project_dir, cache_key) do
-    Output.verbose("Building escript for #{ref.name}...")
+  defp find_script_in_repo(ref, project_dir, cache_key) do
+    case ref.script_path do
+      nil ->
+        find_single_script(project_dir, cache_key)
 
-    with {_, 0} <- System.cmd("mix", ["deps.get"], cd: project_dir, stderr_to_stdout: true),
-         {_, 0} <- System.cmd("mix", ["escript.build"], cd: project_dir, stderr_to_stdout: true) do
-      case find_built_escript(project_dir) do
-        {:ok, escript_path} ->
-          {:ok, cached_path} = Cache.store(cache_key, %{"ref" => ref.name, "type" => "escript"})
-          dest = Path.join(cached_path, Path.basename(escript_path))
-          File.cp!(escript_path, dest)
-          File.chmod!(dest, 0o755)
-          {:ok, {:escript, dest}}
+      path_or_glob ->
+        if String.contains?(path_or_glob, "*") do
+          resolve_glob(project_dir, path_or_glob, cache_key)
+        else
+          resolve_literal_path(project_dir, path_or_glob, cache_key)
+        end
+    end
+  end
 
-        :not_found ->
-          {:error, "no escript produced for #{ref.name} — package may not define an escript"}
+  defp find_single_script(project_dir, cache_key) do
+    case Script.list_scripts(project_dir) do
+      [] ->
+        {:error, "no valid elr scripts found in repository"}
+
+      [script] ->
+        cache_script(script, cache_key)
+
+      scripts ->
+        relative =
+          Enum.map(scripts, &Path.relative_to(&1, project_dir))
+          |> Enum.join("\n  ")
+
+        {:error,
+         "multiple scripts found in repository, specify one with a path or glob:\n  #{relative}"}
+    end
+  end
+
+  defp resolve_glob(project_dir, glob, cache_key) do
+    matches =
+      Path.wildcard(Path.join(project_dir, glob))
+      |> Enum.filter(&Script.valid?/1)
+
+    case matches do
+      [] ->
+        {:error, "no valid scripts matching glob pattern: #{glob}"}
+
+      [script] ->
+        cache_script(script, cache_key)
+
+      scripts ->
+        relative =
+          Enum.map(scripts, &Path.relative_to(&1, project_dir))
+          |> Enum.join("\n  ")
+
+        {:error,
+         "multiple scripts match glob pattern '#{glob}', refine your pattern:\n  #{relative}"}
+    end
+  end
+
+  defp resolve_literal_path(project_dir, script_path, cache_key) do
+    full_path = Path.join(project_dir, script_path)
+
+    if File.exists?(full_path) do
+      case Script.validate(full_path) do
+        {:ok, _} -> cache_script(full_path, cache_key)
+        {:error, reason} -> {:error, reason}
       end
     else
-      {output, _} ->
-        {:error, "build failed: #{String.trim(output)}"}
+      {:error, "script not found in repository: #{script_path}"}
     end
   end
 
-  defp find_built_escript(project_dir) do
-    # Escripts are built in the project root; find the executable file
-    project_dir
-    |> File.ls!()
-    |> Enum.find_value(:not_found, fn file ->
-      path = Path.join(project_dir, file)
+  defp cache_script(script_path, cache_key) do
+    {:ok, cached_path} =
+      Cache.store(cache_key, %{"ref" => Path.basename(script_path), "type" => "script"})
 
-      if not File.dir?(path) and executable?(path) and not String.contains?(file, ".") do
-        {:ok, path}
-      end
-    end)
+    dest = Path.join(cached_path, Path.basename(script_path))
+    File.cp!(script_path, dest)
+
+    Datastore.record_install(cache_key, %{
+      "name" => Path.basename(script_path),
+      "description" => Datastore.extract_description(dest),
+      "deps" => Datastore.extract_deps(dest)
+    })
+
+    {:ok, {:script, dest}}
   end
 
-  defp executable?(path) do
-    case File.stat(path) do
-      {:ok, %{access: access}} when access in [:read_write, :read] ->
-        case System.cmd("file", [path], stderr_to_stdout: true) do
-          {output, 0} -> String.contains?(output, "script") or String.contains?(output, "ELF")
-          _ -> false
-        end
-
-      _ ->
-        false
-    end
-  end
-
-  defp find_cached_escript(cache_key) do
+  defp find_cached_script(cache_key) do
     case Cache.lookup(cache_key) do
       {:ok, path, _metadata} ->
         path

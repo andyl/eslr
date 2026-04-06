@@ -3,16 +3,6 @@ defmodule Elr.ResolverTest do
 
   alias Elr.{Ref, Resolver}
 
-  test "hex package resolves to clone URL" do
-    ref = %Ref{type: :hex, name: "jason", version: "1.4"}
-    assert {:clone, _url, "1.4"} = Resolver.resolve(ref)
-  end
-
-  test "hex package without version" do
-    ref = %Ref{type: :hex, name: "jason"}
-    assert {:clone, _url, nil} = Resolver.resolve(ref)
-  end
-
   test "github ref without git_ref" do
     ref = %Ref{type: :github, name: "my_lib", url: "user/my_lib"}
     assert {:clone, "https://github.com/user/my_lib.git", nil} = Resolver.resolve(ref)

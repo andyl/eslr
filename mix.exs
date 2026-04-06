@@ -29,13 +29,14 @@ defmodule Elr.MixProject do
       # Utilities
       {:igniter, "~> 0.6", only: [:dev, :test]},
       {:jason, "~> 1.4"},
+      {:yaml_elixir, "~> 2.9"},
       # AI Tooling
       {:usage_rules, "~> 1.2", only: [:dev, :test]},
       # Conventional Commits, Releases
       {:commit_hook, "~> 0.4"},
       {:git_ops, "~> 2.0", only: [:dev, :test], runtime: false},
       # Documentation
-      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
     ]
   end
 
@@ -72,8 +73,7 @@ defmodule Elr.MixProject do
       extras: [
         {"README.md", title: "Overview", filename: "overview"},
         "LICENSE"
-      ],
+      ]
     ]
   end
-
 end

@@ -1,29 +1,30 @@
 defmodule Elr.Ref do
   @moduledoc """
-  Parses reference strings into structured types.
+  Parses reference strings into structured types for scripts.
   """
 
-  defstruct [:type, :name, :version, :url, :path, :git_ref]
+  defstruct [:type, :name, :version, :url, :path, :git_ref, :script_path]
 
   @type t :: %__MODULE__{
-          type: :hex | :github | :git | :remote_script | :local,
+          type: :github | :git | :remote_script | :local,
           name: String.t() | nil,
           version: String.t() | nil,
           url: String.t() | nil,
           path: String.t() | nil,
-          git_ref: String.t() | nil
+          git_ref: String.t() | nil,
+          script_path: String.t() | nil
         }
 
   @doc """
   Parses a reference string into `{:ok, %Elr.Ref{}}` or `{:error, reason}`.
 
   Parse order:
-  1. Starts with `./` or `/` or ends with `.exs`/`.escript` → local file
-  2. Starts with `https://` and ends with `.exs` → remote script
-  3. Starts with `https://` or `http://` → error
-  4. Starts with `github:` → GitHub shorthand
-  5. Starts with `git+` → git URL
-  6. Everything else → Hex package
+  1. Starts with `https://` and ends with `.exs` → remote script
+  2. Starts with `https://` or `http://` → error
+  3. Starts with `github:` → GitHub shorthand (with optional path/glob and ref)
+  4. Starts with `git+` → git URL
+  5. Starts with `./` or `/` or ends with `.exs` → local file
+  6. Everything else → error (Hex packages not supported)
   """
   @spec parse(String.t()) :: {:ok, t()} | {:error, String.t()}
   def parse(ref) when is_binary(ref) do
@@ -34,17 +35,18 @@ defmodule Elr.Ref do
       String.starts_with?(ref, "https://") or String.starts_with?(ref, "http://") ->
         {:error, "non-.exs URLs are not supported: #{ref}"}
 
-      local_file?(ref) ->
-        {:ok, %__MODULE__{type: :local, path: ref, name: Path.basename(ref, Path.extname(ref))}}
-
       String.starts_with?(ref, "github:") ->
         parse_github(ref)
 
       String.starts_with?(ref, "git+") ->
         parse_git(ref)
 
+      local_file?(ref) ->
+        {:ok, %__MODULE__{type: :local, path: ref, name: Path.basename(ref, Path.extname(ref))}}
+
       true ->
-        parse_hex(ref)
+        {:error,
+         "Hex package references are not supported. Use a GitHub repo or URL instead: #{ref}"}
     end
   end
 
@@ -53,8 +55,7 @@ defmodule Elr.Ref do
   defp local_file?(ref) do
     String.starts_with?(ref, "./") or
       String.starts_with?(ref, "/") or
-      String.ends_with?(ref, ".exs") or
-      String.ends_with?(ref, ".escript")
+      String.ends_with?(ref, ".exs")
   end
 
   defp url_basename(url) do
@@ -62,13 +63,21 @@ defmodule Elr.Ref do
   end
 
   defp parse_github("github:" <> rest) do
-    case String.split(rest, "#", parts: 2) do
-      [repo] -> build_github(repo, nil)
-      [repo, git_ref] -> build_github(repo, git_ref)
+    # Split on # first to separate git ref
+    {main, git_ref} =
+      case String.split(rest, "#", parts: 2) do
+        [main] -> {main, nil}
+        [main, ref] -> {main, ref}
+      end
+
+    # Split on : to separate repo from script path/glob
+    case String.split(main, ":", parts: 2) do
+      [repo] -> build_github(repo, nil, git_ref)
+      [repo, script_path] -> build_github(repo, script_path, git_ref)
     end
   end
 
-  defp build_github(repo, git_ref) do
+  defp build_github(repo, script_path, git_ref) do
     case String.split(repo, "/", parts: 2) do
       [_user, name] when name != "" ->
         {:ok,
@@ -76,7 +85,8 @@ defmodule Elr.Ref do
            type: :github,
            name: name,
            url: repo,
-           git_ref: git_ref
+           git_ref: git_ref,
+           script_path: script_path
          }}
 
       _ ->
@@ -105,27 +115,5 @@ defmodule Elr.Ref do
        url: url,
        git_ref: git_ref
      }}
-  end
-
-  defp parse_hex(ref) do
-    case String.split(ref, "@", parts: 2) do
-      [name] ->
-        if valid_hex_name?(name) do
-          {:ok, %__MODULE__{type: :hex, name: name}}
-        else
-          {:error, "invalid Hex package name: #{name}"}
-        end
-
-      [name, version] ->
-        if valid_hex_name?(name) do
-          {:ok, %__MODULE__{type: :hex, name: name, version: version}}
-        else
-          {:error, "invalid Hex package name: #{name}"}
-        end
-    end
-  end
-
-  defp valid_hex_name?(name) do
-    name != "" and Regex.match?(~r/^[a-z][a-z0-9_]*$/, name)
   end
 end

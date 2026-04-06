@@ -1,0 +1,143 @@
+#!/usr/bin/env elixir 
+
+# This script runs a simple web service that 
+# submits form data to the 'inbox' command.
+
+Mix.install([{:phoenix_playground, "~> 0.1"}])
+
+defmodule InboxSvc do 
+  use Phoenix.LiveView 
+
+  def mount(_params, _session, socket) do 
+    {:ok, assign(socket, message: "", type: "")}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <script>
+      document.title = "INBOX";
+      (function() {
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+          '<rect x="8" y="16" width="48" height="36" rx="4" fill="#333" />' +
+          '<polyline points="8,16 32,38 56,16" fill="none" stroke="#f5f5f5" stroke-width="4" stroke-linejoin="round" />' +
+          '</svg>';
+        var link = document.createElement("link");
+        link.rel = "icon";
+        link.type = "image/svg+xml";
+        link.href = "data:image/svg+xml," + encodeURIComponent(svg);
+        document.head.appendChild(link);
+      })();
+      document.addEventListener("submit", function() {
+        setTimeout(function() {
+          var el = document.getElementById("inbox-input");
+          if (el) { el.value = ""; el.focus(); }
+        }, 50);
+      });
+    </script>
+    <style>
+      body { font-family: sans-serif; display: flex; justify-content: center; padding-top: 80px; background: #f5f5f5; }
+      h1 { letter-spacing: 0.2em; color: #333; }
+      form { display: flex; gap: 8px; margin-top: 16px; }
+      input[type="text"] { padding: 8px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; width: 30ch; max-width: 100%; }
+      @media (min-width: 768px) { input[type="text"] { width: 45ch; } }
+      button { padding: 8px 14px; font-size: 16px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+      button:hover { background: #555; }
+      .message { margin-top: 12px; font-size: 14px; min-height: 20px; }
+      .error { color: red; }
+      .success { color: green; }
+    </style>
+    <div>
+      <h1>INBOX</h1>
+      <form phx-submit="submit">
+        <input type="text" name="text" value="" placeholder="Item ..." autofocus id="inbox-input" />
+        <button type="submit">SEND</button>
+      </form>
+      <div class={"message #{@type}"}>
+        <%= @message %>
+      </div>
+    </div>
+    """
+  end
+
+  # ----- event handlers 
+
+  def handle_event("submit", %{"text" => text}, socket) do
+    socket =
+      case String.trim(text) do
+        "" ->
+          assign(socket, message: "No data", type: "error")
+
+        trimmed ->
+          run_inbox(trimmed)
+          assign(socket, message: "Success", type: "success")
+      end
+
+    Process.send_after(self(), :clear_message, 2000)
+    {:noreply, socket}
+  end
+
+  def handle_info(:clear_message, socket) do
+    {:noreply, assign(socket, message: "", type: "")}
+  end
+
+  # ----- support functions
+
+  defp run_inbox(message) do
+    Task.start(fn -> System.cmd("inbox", [message]) end)
+  end
+end
+
+defmodule CLI do
+  @default_port 4000
+  @default_bind "127.0.0.1"
+
+  def usage do
+    IO.puts("""
+    Usage: inbox_svc [options]
+
+    Options:
+      -p, --port PORT           Port to listen on (default: #{@default_port})
+      -b, --bind_address ADDR   Bind address (default: #{@default_bind})
+      -h, --help                Show this help message
+    """)
+  end
+
+  def parse(args) do
+    case OptionParser.parse(args, strict: [port: :integer, bind_address: :string, help: :boolean], aliases: [p: :port, b: :bind_address, h: :help]) do
+      {opts, [], []} ->
+        if opts[:help] do
+          usage()
+          System.halt(0)
+        end
+
+        {:ok, Keyword.get(opts, :port, @default_port), Keyword.get(opts, :bind_address, @default_bind)}
+
+      {_, _, invalid} ->
+        for {flag, _} <- invalid, do: IO.puts(:stderr, "Error: invalid option #{flag}")
+        usage()
+        System.halt(1)
+    end
+  end
+
+  def parse_ip(addr) do
+    case :inet.parse_address(String.to_charlist(addr)) do
+      {:ok, ip_tuple} -> ip_tuple
+      {:error, _} ->
+        IO.puts(:stderr, "Error: invalid bind address '#{addr}'")
+        System.halt(1)
+    end
+  end
+end
+
+{:ok, port, bind_address} = CLI.parse(System.argv())
+ip = CLI.parse_ip(bind_address)
+
+case System.find_executable("inbox") do
+  nil ->
+    IO.puts(:stderr, "Error: 'inbox' command not found in PATH")
+    System.halt(1)
+
+  _ ->
+    IO.puts("inbox_svc listening on #{bind_address}:#{port}")
+    PhoenixPlayground.start(live: InboxSvc, port: port, ip: ip, open_browser: false, endpoint_options: [check_origin: false])
+end

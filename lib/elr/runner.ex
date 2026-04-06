@@ -1,42 +1,21 @@
 defmodule Elr.Runner do
   @moduledoc """
-  Executes escripts and scripts as subprocesses.
+  Executes scripts as subprocesses via the elixir interpreter.
   """
 
   alias Elr.Output
 
-  @spec run({:escript, String.t()} | {:script, String.t()}, Elr.Ref.t(), [String.t()]) ::
-          :ok | {:error, String.t()}
-
-  def run({:escript, path}, _ref, argv) do
-    Output.verbose("Running escript: #{path}")
-    run_command(path, argv)
-  end
+  @spec run({:script, String.t()}, Elr.Ref.t(), [String.t()]) :: :ok | {:error, String.t()}
 
   def run({:script, path}, _ref, argv) do
     Output.verbose("Running script: #{path}")
-    run_command("elixir", [path | argv])
-  end
 
-  defp run_command(cmd, args) when is_list(args) do
     port =
-      Port.open({:spawn_executable, System.find_executable(cmd)}, [
+      Port.open({:spawn_executable, System.find_executable("elixir")}, [
         :binary,
         :exit_status,
         :stderr_to_stdout,
-        args: args
-      ])
-
-    stream_port(port)
-  end
-
-  defp run_command(cmd, argv) do
-    port =
-      Port.open({:spawn_executable, cmd}, [
-        :binary,
-        :exit_status,
-        :stderr_to_stdout,
-        args: argv
+        args: [path | argv]
       ])
 
     stream_port(port)

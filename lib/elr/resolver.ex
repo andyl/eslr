@@ -10,10 +10,6 @@ defmodule Elr.Resolver do
           | {:script, String.t()}
           | {:local, String.t()}
 
-  def resolve(%Ref{type: :hex, name: name, version: version}) do
-    {:clone, hex_repo_url(name), version}
-  end
-
   def resolve(%Ref{type: :github, url: repo, git_ref: git_ref}) do
     {:clone, "https://github.com/#{repo}.git", git_ref}
   end
@@ -28,9 +24,5 @@ defmodule Elr.Resolver do
 
   def resolve(%Ref{type: :local, path: path}) do
     {:local, path}
-  end
-
-  defp hex_repo_url(name) do
-    "https://github.com/#{name}/#{name}.git"
   end
 end
