@@ -5,6 +5,19 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## v0.0.6 (2026-04-06)
+
+
+
+
+### Bug Fixes:
+
+* drop scripts under the test directory by andyl
+
+* make script executable by andyl
+
+* remove escripts by andyl
+
 ## v0.0.5 (2026-04-06)
 
 
