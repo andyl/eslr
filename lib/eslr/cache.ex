@@ -17,7 +17,7 @@ defmodule Eslr.Cache do
     elixir_version = System.version()
     otp_release = :erlang.system_info(:otp_release) |> to_string()
 
-    parts = [ref.type, ref.name, ref.version || "latest", ref.git_ref || "HEAD"]
+    parts = [ref.type, ref.name, ref.version || "latest", ref.git_ref || "HEAD", ref.script_path || ""]
     ref_hash = :crypto.hash(:sha256, Enum.join(parts, ":")) |> Base.encode16(case: :lower)
 
     "#{ref.name}-#{String.slice(ref_hash, 0, 12)}-elixir#{elixir_version}-otp#{otp_release}"
