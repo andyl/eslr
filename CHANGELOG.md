@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## v0.0.5 (2026-04-06)
+
+
+
+
+### Bug Fixes:
+
+* make script executable by andyl
+
 ## v0.0.4 (2026-04-06)
 
 
