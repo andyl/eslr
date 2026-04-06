@@ -21,9 +21,9 @@ defmodule Eslr.CLI do
   ]
 
   def main(argv) do
-    {elr_argv, script_ref, script_argv} = split_argv(argv)
+    {eslr_argv, script_ref, script_argv} = split_argv(argv)
 
-    {opts, args, _invalid} = OptionParser.parse(elr_argv, strict: @switches, aliases: @aliases)
+    {opts, args, _invalid} = OptionParser.parse(eslr_argv, strict: @switches, aliases: @aliases)
 
     Output.set_verbose(opts[:verbose] || false)
 
@@ -32,7 +32,7 @@ defmodule Eslr.CLI do
         print_help()
 
       opts[:version] ->
-        IO.puts("elr #{Eslr.version()}")
+        IO.puts("eslr #{Eslr.version()}")
 
       opts[:cache] ->
         handle_cache(opts[:cache])
@@ -110,7 +110,7 @@ defmodule Eslr.CLI do
   end
 
   defp find_scripts_in_repo(url, git_ref, _opts) do
-    tmp_dir = Path.join(System.tmp_dir!(), "elr_find_#{:rand.uniform(1_000_000)}")
+    tmp_dir = Path.join(System.tmp_dir!(), "eslr_find_#{:rand.uniform(1_000_000)}")
 
     try do
       clone_args =
@@ -124,7 +124,7 @@ defmodule Eslr.CLI do
           scripts = Script.list_scripts(tmp_dir)
 
           if scripts == [] do
-            IO.puts("No valid elr scripts found.")
+            IO.puts("No valid eslr scripts found.")
           else
             Enum.each(scripts, fn script ->
               IO.puts(Path.relative_to(script, tmp_dir))
@@ -173,12 +173,12 @@ defmodule Eslr.CLI do
 
   defp print_help do
     IO.puts("""
-    elr — Elixir Load & Run
+    eslr — Elixir Script Load & Run
 
     Usage:
-      elr [options] [--] <reference> [args...]
-      elr --find <reference>
-      elr --cache <subcommand>
+      eslr [options] [--] <reference> [args...]
+      eslr --find <reference>
+      eslr --cache <subcommand>
 
     Options:
       -h, --help       Show this help
@@ -188,10 +188,10 @@ defmodule Eslr.CLI do
       --find           List valid scripts in a repository
 
     Cache subcommands:
-      elr --cache dir     Show cache directory path
-      elr --cache list    List cached entries
-      elr --cache clean   Remove all cached entries
-      elr --cache prune   Remove entries older than 30 days
+      eslr --cache dir     Show cache directory path
+      eslr --cache list    List cached entries
+      eslr --cache clean   Remove all cached entries
+      eslr --cache prune   Remove entries older than 30 days
 
     Reference types:
       github:user/repo              GitHub repo (default branch)
@@ -204,13 +204,13 @@ defmodule Eslr.CLI do
       /path/to/file.exs             Local .exs script
 
     Argument separation:
-      Use -- to separate elr options from script arguments:
-      elr --verbose -- github:user/repo --help
-      (--help is passed to the script, not to elr)
+      Use -- to separate eslr options from script arguments:
+      eslr --verbose -- github:user/repo --help
+      (--help is passed to the script, not to eslr)
 
     Environment variables:
-      ELR_CACHE_DIR    Override cache directory
-      ELR_NO_COLOR     Disable colored output
+      ESLR_CACHE_DIR    Override cache directory
+      ESLR_NO_COLOR     Disable colored output
     """)
   end
 end
