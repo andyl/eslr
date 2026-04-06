@@ -1,16 +1,17 @@
 # eslr — Elixir Script Load & Run
 
-Load and run Elixir scripts (`.exs`) and escripts from git repos, or direct URLs.  
+Load and run Elixir scripts (`.exs`) from git repos or direct URLs.  
 
 Pronounced `es-lr`, inspired by [npx](https://docs.npmjs.com/cli/v11/commands/npx), 
-built for Elixir. Just point `eslr` at a scipt reference and go.  
+built for Elixir. Just point `eslr` at a script reference and go.  
 
 ## Installation
 
 ```bash
-> mix escript.install github:andyl/eslr     # install
-> export PATH="$HOME/.mix/escripts:$PATH"   # update $PATH
-> eslr --help                               # verify 
+> mix escript.install github:andyl/eslr          # install
+> export PATH="$HOME/.mix/escripts:$PATH"        # update $PATH
+> eslr --help                                    # verify 
+> mix escript.install github:andyl/eslr --force  # update
 ```
 
 ## Usage
@@ -18,19 +19,18 @@ built for Elixir. Just point `eslr` at a scipt reference and go.
 ```bash
 eslr <reference> [args...]
 ```
-| Src    | Type    | Example Command                                                        |
-|--------|---------|------------------------------------------------------------------------|
-| GitHub | Escript | `eslr github:livebook-dev/livebook`                                     |
-| GitHub | Script  | `eslr github:wojtekmach/mix_install_examples#main`                      |
-| URL    | Script  | `eslr https://raw.githubusercontent.com/user/repo/main/tool.exs --help` |
-| Local  | Script  | `eslr ./my_tool.exs --verbose`                                          |
+| Src    | Example Command                                                         |
+|--------|-------------------------------------------------------------------------|
+| GitHub | `eslr github:wojtekmach:benchee.exs`                                    |
+| URL    | `eslr https://raw.githubusercontent.com/user/repo/main/tool.exs --help` |
+| Local  | `eslr ./my_tool.exs --verbose`                                          |
+
+Many example scripts are at [github:wojtekmach/mix_install_examples](https://github.com/wojtekmach/mix_install_examples).
 
 ## Reference Types
 
 | Format                  | Description                        |
 |-------------------------|------------------------------------|
-| `package_name`          | Hex package (latest version)       |
-| `package_name@version`  | Hex package (specific version)     |
 | `github:user/repo`      | GitHub repository (default branch) |
 | `github:user/repo#ref`  | GitHub repository (specific ref)   |
 | `git+https://url`       | Git repository                     |
@@ -45,6 +45,7 @@ eslr <reference> [args...]
 -h, --help          Show help
 -v, --version       Show version
 -V, --verbose       Show detailed loading steps
+    --find REF      Find all scripts in a repo
     --no-cache      Disable caching (force fresh load)
     --cache DIR     Cache subcommand (dir, list, clean, prune)
 ```
