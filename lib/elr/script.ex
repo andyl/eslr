@@ -69,7 +69,7 @@ defmodule Elr.Script do
     relative
     |> Path.split()
     |> Enum.any?(fn segment ->
-      String.starts_with?(segment, ".") or segment in ["deps", "_build", "node_modules"]
+      String.starts_with?(segment, ".") or segment in ["deps", "_build", "node_modules", "test"]
     end)
   end
 

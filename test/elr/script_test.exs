@@ -151,11 +151,13 @@ defmodule Elr.ScriptTest do
       refute "readme.md" in basenames
     end
 
-    test "skips hidden directories and deps", %{tmp_dir: dir} do
+    test "skips hidden directories, deps, and test", %{tmp_dir: dir} do
       File.mkdir_p!(Path.join(dir, ".git"))
       File.write!(Path.join([dir, ".git", "hook.exs"]), "Mix.install([:jason])")
       File.mkdir_p!(Path.join(dir, "deps"))
       File.write!(Path.join([dir, "deps", "dep.exs"]), "Mix.install([:jason])")
+      File.mkdir_p!(Path.join(dir, "test"))
+      File.write!(Path.join([dir, "test", "my_test.exs"]), "Mix.install([:jason])")
 
       assert Script.list_scripts(dir) == []
     end
