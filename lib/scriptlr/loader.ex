@@ -1,9 +1,9 @@
-defmodule Eslr.Loader do
+defmodule Scriptlr.Loader do
   @moduledoc """
   Clones repos, downloads scripts, and locates valid scripts. Uses cache when available.
   """
 
-  alias Eslr.{Cache, Datastore, Http, Output, Ref, Resolver, Script}
+  alias Scriptlr.{Cache, Datastore, Http, Output, Ref, Resolver, Script}
 
   @spec load(Ref.t(), keyword()) :: {:ok, {:script, String.t()}} | {:error, String.t()}
   def load(%Ref{} = ref, opts \\ []) do
@@ -89,7 +89,7 @@ defmodule Eslr.Loader do
   defp find_single_script(project_dir, cache_key, ref_string) do
     case Script.list_scripts(project_dir) do
       [] ->
-        {:error, "no valid eslr scripts found in repository"}
+        {:error, "no valid scriptlr scripts found in repository"}
 
       [script] ->
         cache_script(script, cache_key, ref_string)
@@ -128,7 +128,7 @@ defmodule Eslr.Loader do
       "name" => Path.basename(script_path),
       "description" => Datastore.extract_description(dest),
       "deps" => Datastore.extract_deps(dest),
-      "eslr_command" => "eslr #{ref_string}"
+      "scriptlr_command" => "scriptlr #{ref_string}"
     })
 
     {:ok, {:script, dest}}
@@ -188,7 +188,7 @@ defmodule Eslr.Loader do
           "name" => "script.exs",
           "description" => Datastore.extract_description(script_path),
           "deps" => Datastore.extract_deps(script_path),
-          "eslr_command" => "eslr #{ref_string}"
+          "scriptlr_command" => "scriptlr #{ref_string}"
         })
 
         {:ok, {:script, script_path}}

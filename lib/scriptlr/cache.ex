@@ -1,4 +1,4 @@
-defmodule Eslr.Cache do
+defmodule Scriptlr.Cache do
   @moduledoc """
   Filesystem caching keyed by reference + Elixir/OTP version.
   """
@@ -7,13 +7,13 @@ defmodule Eslr.Cache do
 
   def dir do
     cond do
-      dir = System.get_env("ESLR_CACHE_DIR") -> dir
-      xdg = System.get_env("XDG_CACHE_HOME") -> Path.join(xdg, "eslr")
-      true -> Path.join(System.user_home!(), ".cache/eslr")
+      dir = System.get_env("SCRIPTLR_CACHE_DIR") -> dir
+      xdg = System.get_env("XDG_CACHE_HOME") -> Path.join(xdg, "scriptlr")
+      true -> Path.join(System.user_home!(), ".cache/scriptlr")
     end
   end
 
-  def cache_key(%Eslr.Ref{} = ref) do
+  def cache_key(%Scriptlr.Ref{} = ref) do
     elixir_version = System.version()
     otp_release = :erlang.system_info(:otp_release) |> to_string()
 

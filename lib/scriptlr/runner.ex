@@ -1,11 +1,11 @@
-defmodule Eslr.Runner do
+defmodule Scriptlr.Runner do
   @moduledoc """
   Executes scripts as subprocesses via the elixir interpreter.
   """
 
-  alias Eslr.Output
+  alias Scriptlr.Output
 
-  @spec run({:script, String.t()}, Eslr.Ref.t(), [String.t()]) :: :ok | {:error, String.t()}
+  @spec run({:script, String.t()}, Scriptlr.Ref.t(), [String.t()]) :: :ok | {:error, String.t()}
 
   def run({:script, path}, _ref, argv) do
     Output.verbose("Running script: #{path}")

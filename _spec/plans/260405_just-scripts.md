@@ -48,7 +48,7 @@ file path or glob pattern within the repo. The `Ref` struct gains a `glob` (or
 
 ### Script validation as a first-class concept
 
-A new `Eslr.Script` module (or function group in an existing module) encapsulates the two validation rules:
+A new `Scriptlr.Script` module (or function group in an existing module) encapsulates the two validation rules:
 1. `.exs` file containing `Mix.install`
 2. Executable, no extension, Elixir shebang (`#!/usr/bin/env elixir` or `#!/usr/bin/env mix`), containing `Mix.install`
 
@@ -169,7 +169,7 @@ in that case.
     - Files: `mix.exs`
     - Add `{:yaml_elixir, "~> 2.9"}` to deps (all envs, since it's needed at runtime)
 
-16. **Implement `Eslr.Datastore` module**
+16. **Implement `Scriptlr.Datastore` module**
     - Files: `lib/elr/datastore.ex` (new)
     - Path: `Cache.dir()/.script_directory.yml`
     - `read/0` — load and parse the YAML file, return map of records keyed by reference string
@@ -220,7 +220,7 @@ in that case.
     - Update `@moduledoc` strings
     - Update `@spec` types (remove `:escript` variants, `:hex` type)
 
-22. **Update `Eslr.Resolver` for script-only resolution**
+22. **Update `Scriptlr.Resolver` for script-only resolution**
     - Files: `lib/elr/resolver.ex`
     - Simplify return type: only `{:clone, url, git_ref}`, `{:script, url}`, `{:local, path}`
     - Ensure GitHub refs with `script_path` pass it through

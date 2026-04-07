@@ -1,4 +1,4 @@
-defmodule Eslr do
+defmodule Scriptlr do
   @moduledoc """
   Elixir Script Load & Run — the Elixir equivalent of `npx`.
 

@@ -1,4 +1,4 @@
-defmodule Eslr.Output do
+defmodule Scriptlr.Output do
   @moduledoc """
   User-facing output with color and verbosity support.
   """

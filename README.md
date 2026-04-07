@@ -1,29 +1,29 @@
-# eslr — Elixir Script Load & Run
+# scriptlr — Elixir Script Load & Run
 
 Load and run Elixir scripts (`.exs`) from git repos or direct URLs.  
 
 Pronounced `es-lr`, inspired by [npx](https://docs.npmjs.com/cli/v11/commands/npx), 
-built for Elixir. Just point `eslr` at a script reference and go.  
+built for Elixir. Just point `scriptlr` at a script reference and go.  
 
 ## Installation
 
 ```bash
-> mix escript.install github:andyl/eslr          # install
+> mix escript.install github:andyl/scriptlr          # install
 > export PATH="$HOME/.mix/escripts:$PATH"        # update $PATH
-> eslr --help                                    # verify 
-> mix escript.install github:andyl/eslr --force  # update
+> scriptlr --help                                    # verify 
+> mix escript.install github:andyl/scriptlr --force  # update
 ```
 
 ## Usage
 
 ```bash
-eslr <reference> [args...]
+scriptlr <reference> [args...]
 ```
 | Src    | Example Command                                                         |
 |--------|-------------------------------------------------------------------------|
-| GitHub | `eslr github:wojtekmach:benchee.exs`                                    |
-| URL    | `eslr https://raw.githubusercontent.com/user/repo/main/tool.exs --help` |
-| Local  | `eslr ./my_tool.exs --verbose`                                          |
+| GitHub | `scriptlr github:wojtekmach:benchee.exs`                                    |
+| URL    | `scriptlr https://raw.githubusercontent.com/user/repo/main/tool.exs --help` |
+| Local  | `scriptlr ./my_tool.exs --verbose`                                          |
 
 Many example scripts are at [github:wojtekmach/mix_install_examples](https://github.com/wojtekmach/mix_install_examples).
 
@@ -52,14 +52,14 @@ Many example scripts are at [github:wojtekmach/mix_install_examples](https://git
 
 ## Cache Management
 
-`eslr` caches loaded references in `~/.cache/eslr` (or `$XDG_CACHE_HOME/eslr`),
+`scriptlr` caches loaded references in `~/.cache/scriptlr` (or `$XDG_CACHE_HOME/scriptlr`),
 keyed by reference + Elixir/OTP version.
 
 ```bash
-eslr --cache dir     # Show cache directory
-eslr --cache list    # List cached references
-eslr --cache clean   # Remove all cached entries
-eslr --cache prune   # Remove entries older than 30 days
+scriptlr --cache dir     # Show cache directory
+scriptlr --cache list    # List cached references
+scriptlr --cache clean   # Remove all cached entries
+scriptlr --cache prune   # Remove entries older than 30 days
 ```
 
 Use `--no-cache` to bypass the cache and force a fresh load.
@@ -76,8 +76,8 @@ Use `--no-cache` to bypass the cache and force a fresh load.
 
 | Variable         | Description                                |
 |------------------|--------------------------------------------|
-| `ESLR_CACHE_DIR` | Custom cache directory (overrides default) |
-| `ESLR_NO_COLOR`  | Disable colored output                     |
+| `SCRIPTLR_CACHE_DIR` | Custom cache directory (overrides default) |
+| `SCRIPTLR_NO_COLOR`  | Disable colored output                     |
 
 ## Development
 

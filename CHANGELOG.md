@@ -32,7 +32,7 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 * update cli help by andyl
 
-* rename elr to eslr by andyl
+* rename elr to scriptlr by andyl
 
 ## v0.0.6 (2026-04-06)
 

@@ -1,4 +1,4 @@
-defmodule Eslr.Http do
+defmodule Scriptlr.Http do
   @moduledoc """
   HTTP client wrapper using Erlang's built-in `:httpc`.
   """

@@ -1,15 +1,15 @@
-defmodule Eslr.DatastoreTest do
+defmodule Scriptlr.DatastoreTest do
   use ExUnit.Case
 
-  alias Eslr.Datastore
+  alias Scriptlr.Datastore
 
   setup do
     tmp_dir = Path.join(System.tmp_dir!(), "elr_ds_test_#{:rand.uniform(100_000)}")
     File.mkdir_p!(tmp_dir)
-    System.put_env("ESLR_CACHE_DIR", tmp_dir)
+    System.put_env("SCRIPTLR_CACHE_DIR", tmp_dir)
 
     on_exit(fn ->
-      System.delete_env("ESLR_CACHE_DIR")
+      System.delete_env("SCRIPTLR_CACHE_DIR")
       File.rm_rf!(tmp_dir)
     end)
 

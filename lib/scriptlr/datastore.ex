@@ -1,10 +1,10 @@
-defmodule Eslr.Datastore do
+defmodule Scriptlr.Datastore do
   @moduledoc """
   YAML-based cache datastore tracking per-script usage stats.
   Stored at `Cache.dir()/.script_directory.yml`.
   """
 
-  alias Eslr.Cache
+  alias Scriptlr.Cache
 
   @filename ".script_directory.yml"
 
@@ -65,7 +65,7 @@ defmodule Eslr.Datastore do
         "source" => metadata[:source] || metadata["source"],
         "description" => metadata[:description] || metadata["description"],
         "deps" => metadata[:deps] || metadata["deps"] || [],
-        "eslr_command" => metadata[:eslr_command] || metadata["eslr_command"],
+        "scriptlr_command" => metadata[:scriptlr_command] || metadata["scriptlr_command"],
         "installed_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
         "run_count" => Map.get(data[key] || %{}, "run_count", 0)
       })

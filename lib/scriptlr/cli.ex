@@ -1,9 +1,9 @@
-defmodule Eslr.CLI do
+defmodule Scriptlr.CLI do
   @moduledoc """
   Escript entrypoint. Parses arguments and orchestrates the pipeline.
   """
 
-  alias Eslr.{Cache, Datastore, Loader, Output, Ref, Script}
+  alias Scriptlr.{Cache, Datastore, Loader, Output, Ref, Script}
 
   @switches [
     help: :boolean,
@@ -21,9 +21,9 @@ defmodule Eslr.CLI do
   ]
 
   def main(argv) do
-    {eslr_argv, script_ref, script_argv} = split_argv(argv)
+    {scriptlr_argv, script_ref, script_argv} = split_argv(argv)
 
-    {opts, args, _invalid} = OptionParser.parse(eslr_argv, strict: @switches, aliases: @aliases)
+    {opts, args, _invalid} = OptionParser.parse(scriptlr_argv, strict: @switches, aliases: @aliases)
 
     Output.set_verbose(opts[:verbose] || false)
 
@@ -32,7 +32,7 @@ defmodule Eslr.CLI do
         print_help()
 
       opts[:version] ->
-        IO.puts("eslr #{Eslr.version()}")
+        IO.puts("scriptlr #{Scriptlr.version()}")
 
       opts[:cache] ->
         handle_cache(opts[:cache], args)
@@ -73,7 +73,7 @@ defmodule Eslr.CLI do
 
       {:error, _reason} ->
         case Datastore.find_by_name(ref_string) do
-          {:ok, _key, %{"eslr_command" => "eslr " <> saved_ref}} ->
+          {:ok, _key, %{"scriptlr_command" => "scriptlr " <> saved_ref}} ->
             run(saved_ref, argv, opts)
 
           _ ->
@@ -89,7 +89,7 @@ defmodule Eslr.CLI do
         cache_key = Cache.cache_key(ref)
         Datastore.record_run(cache_key)
 
-        case Eslr.Runner.run(result, ref, argv) do
+        case Scriptlr.Runner.run(result, ref, argv) do
           :ok ->
             :ok
 
@@ -111,7 +111,7 @@ defmodule Eslr.CLI do
 
   defp handle_find(ref_string, _opts) do
     with {:ok, ref} <- Ref.parse(ref_string) do
-      case Eslr.Resolver.resolve(ref) do
+      case Scriptlr.Resolver.resolve(ref) do
         {:clone, url, git_ref} ->
           find_scripts_in_repo(ref_string, url, git_ref)
 
@@ -129,7 +129,7 @@ defmodule Eslr.CLI do
   defp find_scripts_in_repo(ref_string, url, git_ref) do
     # Strip any trailing #ref from the ref_string for building output
     base_ref = String.replace(ref_string, ~r/#.*$/, "")
-    tmp_dir = Path.join(System.tmp_dir!(), "eslr_find_#{:rand.uniform(1_000_000)}")
+    tmp_dir = Path.join(System.tmp_dir!(), "scriptlr_find_#{:rand.uniform(1_000_000)}")
 
     try do
       clone_args =
@@ -143,7 +143,7 @@ defmodule Eslr.CLI do
           scripts = Script.list_scripts(tmp_dir)
 
           if scripts == [] do
-            IO.puts("No valid eslr scripts found.")
+            IO.puts("No valid scriptlr scripts found.")
           else
             Enum.each(scripts, fn script ->
               path = Path.relative_to(script, tmp_dir)
@@ -245,12 +245,12 @@ defmodule Eslr.CLI do
 
   defp print_help do
     IO.puts("""
-    eslr — Elixir Script Load & Run
+    scriptlr — Elixir Script Load & Run
 
     Usage:
-      eslr [options] [--] <reference> [args...]
-      eslr --find <reference>
-      eslr --cache <subcommand>
+      scriptlr [options] [--] <reference> [args...]
+      scriptlr --find <reference>
+      scriptlr --cache <subcommand>
 
     Options:
       -h, --help       Show this help
@@ -260,12 +260,12 @@ defmodule Eslr.CLI do
       --find REF       List valid scripts in a repository
 
     Cache subcommands:
-      eslr --cache dir          Show cache directory path
-      eslr --cache list         List cached entries
-      eslr --cache info NAME    Show details for a cached script
-      eslr --cache remove NAME  Remove a cached script
-      eslr --cache clean        Remove all cached entries
-      eslr --cache prune        Remove entries older than 30 days
+      scriptlr --cache dir          Show cache directory path
+      scriptlr --cache list         List cached entries
+      scriptlr --cache info NAME    Show details for a cached script
+      scriptlr --cache remove NAME  Remove a cached script
+      scriptlr --cache clean        Remove all cached entries
+      scriptlr --cache prune        Remove entries older than 30 days
 
     Reference types:
       github:user/repo              GitHub repo (default branch)
@@ -278,13 +278,13 @@ defmodule Eslr.CLI do
       /path/to/file.exs             Local .exs script
 
     Argument separation:
-      Use -- to separate eslr options from script arguments:
-      eslr --verbose -- github:user/repo --help
-      (--help is passed to the script, not to eslr)
+      Use -- to separate scriptlr options from script arguments:
+      scriptlr --verbose -- github:user/repo --help
+      (--help is passed to the script, not to scriptlr)
 
     Environment variables:
-      ESLR_CACHE_DIR    Override cache directory
-      ESLR_NO_COLOR     Disable colored output
+      SCRIPTLR_CACHE_DIR    Override cache directory
+      SCRIPTLR_NO_COLOR     Disable colored output
     """)
   end
 

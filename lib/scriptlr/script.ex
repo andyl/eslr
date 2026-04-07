@@ -1,4 +1,4 @@
-defmodule Eslr.Script do
+defmodule Scriptlr.Script do
   @moduledoc """
   Script validation for elr. A valid script is either:
 

@@ -1,7 +1,7 @@
-defmodule Eslr.ScriptTest do
+defmodule Scriptlr.ScriptTest do
   use ExUnit.Case, async: true
 
-  alias Eslr.Script
+  alias Scriptlr.Script
 
   setup do
     tmp_dir = Path.join(System.tmp_dir!(), "elr_script_test_#{:rand.uniform(100_000)}")

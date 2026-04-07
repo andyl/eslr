@@ -1,7 +1,7 @@
-defmodule Eslr.ResolverTest do
+defmodule Scriptlr.ResolverTest do
   use ExUnit.Case, async: true
 
-  alias Eslr.{Ref, Resolver}
+  alias Scriptlr.{Ref, Resolver}
 
   test "github ref without git_ref" do
     ref = %Ref{type: :github, name: "my_lib", url: "user/my_lib"}

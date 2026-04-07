@@ -36,13 +36,13 @@ repeated runs.
 
 Organize around a pipeline: **parse → resolve → cache check → load → detect entrypoint → execute**.
 
-- `Eslr.CLI` — escript entrypoint, argument parsing, option handling
-- `Eslr.Ref` — reference string parsing into a structured type (`%Eslr.Ref{}`)
-- `Eslr.Resolver` — resolves a parsed ref into a `Mix.install` dependency spec or a downloadable script URL
-- `Eslr.Cache` — cache directory management, lookup, storage, pruning
-- `Eslr.Loader` — calls `Mix.install/2` or downloads scripts, using cache when available
-- `Eslr.Runner` — entrypoint detection and execution
-- `Eslr.Output` — user-facing output (respects `--verbose` and `ELR_NO_COLOR`)
+- `Scriptlr.CLI` — escript entrypoint, argument parsing, option handling
+- `Scriptlr.Ref` — reference string parsing into a structured type (`%Scriptlr.Ref{}`)
+- `Scriptlr.Resolver` — resolves a parsed ref into a `Mix.install` dependency spec or a downloadable script URL
+- `Scriptlr.Cache` — cache directory management, lookup, storage, pruning
+- `Scriptlr.Loader` — calls `Mix.install/2` or downloads scripts, using cache when available
+- `Scriptlr.Runner` — entrypoint detection and execution
+- `Scriptlr.Output` — user-facing output (respects `--verbose` and `ELR_NO_COLOR`)
 
 ### Mix.install constraints
 
@@ -75,13 +75,13 @@ Apply rules in this order to the first CLI argument:
 
 1. **Configure escript build in `mix.exs`**
    - Files: `mix.exs`
-   - Add `escript: [main_module: Eslr.CLI]` to the project config
+   - Add `escript: [main_module: Scriptlr.CLI]` to the project config
    - Add any needed runtime dependencies (e.g. `req` for HTTP fetching of remote scripts)
 
-2. **Define the `Eslr.Ref` struct and parser**
+2. **Define the `Scriptlr.Ref` struct and parser**
    - Files: `lib/elr/ref.ex`
-   - Define `%Eslr.Ref{type, name, version, url, path, git_ref}` struct
-   - Implement `Eslr.Ref.parse/1` that takes a reference string and returns `{:ok, %Eslr.Ref{}}` or `{:error, reason}`
+   - Define `%Scriptlr.Ref{type, name, version, url, path, git_ref}` struct
+   - Implement `Scriptlr.Ref.parse/1` that takes a reference string and returns `{:ok, %Scriptlr.Ref{}}` or `{:error, reason}`
    - Follow the parse-order rules above
    - Handle version extraction from `package@version` syntax
    - Handle `#ref` extraction from GitHub and git URLs
@@ -91,7 +91,7 @@ Apply rules in this order to the first CLI argument:
    - Cover all five reference types with valid and invalid inputs
    - Test edge cases: missing version, malformed GitHub shorthand, relative vs absolute paths
 
-4. **Implement `Eslr.Cache` module**
+4. **Implement `Scriptlr.Cache` module**
    - Files: `lib/elr/cache.ex`
    - Implement cache directory resolution: `$ELR_CACHE_DIR` > `$XDG_CACHE_HOME/elr` > `~/.cache/elr`
    - Implement `cache_key/1` that generates a deterministic key from ref + Elixir version + OTP version
@@ -105,11 +105,11 @@ Apply rules in this order to the first CLI argument:
    - Test store/lookup/delete/list/prune lifecycle
    - Use a temporary directory for test isolation
 
-6. **Implement `Eslr.Resolver` module**
+6. **Implement `Scriptlr.Resolver` module**
    - Files: `lib/elr/resolver.ex`
-   - Convert `%Eslr.Ref{type: :hex}` → `Mix.install` dependency tuple `{:package, "~> version"}`
-   - Convert `%Eslr.Ref{type: :github}` → `{:package, github: "user/repo", ref: "ref"}`
-   - Convert `%Eslr.Ref{type: :git}` → `{:package, git: "url", ref: "ref"}`
+   - Convert `%Scriptlr.Ref{type: :hex}` → `Mix.install` dependency tuple `{:package, "~> version"}`
+   - Convert `%Scriptlr.Ref{type: :github}` → `{:package, github: "user/repo", ref: "ref"}`
+   - Convert `%Scriptlr.Ref{type: :git}` → `{:package, git: "url", ref: "ref"}`
    - For `:remote_script`, return the URL to download
    - For `:local`, return the validated file path
 
@@ -117,7 +117,7 @@ Apply rules in this order to the first CLI argument:
    - Files: `test/elr/resolver_test.exs`
    - Test each reference type produces the correct dependency spec or path
 
-8. **Implement `Eslr.Loader` module**
+8. **Implement `Scriptlr.Loader` module**
    - Files: `lib/elr/loader.ex`
    - For Hex/git refs: check cache, then call `Mix.install/2` with the resolved dep spec
    - For remote scripts: download via HTTP to cache dir, then return path
@@ -125,25 +125,25 @@ Apply rules in this order to the first CLI argument:
    - Respect `--no-cache` flag (pass `force: true` to `Mix.install`, skip cache lookup)
    - Log steps when `--verbose` is set
 
-9. **Implement `Eslr.Runner` module**
+9. **Implement `Scriptlr.Runner` module**
    - Files: `lib/elr/runner.ex`
    - For loaded Hex/git packages: inspect loaded applications for escript config; if found, build and run escript; otherwise find a module with `main/1` and call it with argv
    - For `.exs` scripts (remote or local): use `Code.eval_file/1`
    - Forward all post-reference CLI arguments as argv
 
-10. **Implement `Eslr.Output` module**
+10. **Implement `Scriptlr.Output` module**
     - Files: `lib/elr/output.ex`
     - Provide `info/1`, `error/1`, `verbose/1` functions
     - Check `ELR_NO_COLOR` env var to conditionally disable ANSI colors
     - `verbose/1` only prints when verbose mode is active
 
-11. **Implement `Eslr.CLI` — the escript entrypoint**
+11. **Implement `Scriptlr.CLI` — the escript entrypoint**
     - Files: `lib/elr/cli.ex`
     - Implement `main/1` that receives argv
     - Parse options with `OptionParser`: `--help`, `--version`, `--verbose`, `--no-cache`, `--cache`
     - Route `--help` → print help text and exit
     - Route `--version` → print version and exit
-    - Route `--cache <subcommand>` → delegate to `Eslr.Cache` management functions
+    - Route `--cache <subcommand>` → delegate to `Scriptlr.Cache` management functions
     - Otherwise: parse ref → resolve → load → run, with error handling at each stage
 
 12. **Write integration tests**
@@ -153,7 +153,7 @@ Apply rules in this order to the first CLI argument:
     - Test running a local `.exs` script end-to-end
     - Test error handling for invalid references
 
-13. **Update the top-level `Eslr` module**
+13. **Update the top-level `Scriptlr` module**
     - Files: `lib/elr.ex`
     - Replace the scaffold with version info and any top-level API if needed
     - Add `@version` attribute read from `mix.exs` or hardcoded
@@ -167,7 +167,7 @@ Apply rules in this order to the first CLI argument:
 - **Step 1** (mix.exs config) must come first — everything depends on the project being buildable as an escript.
 - **Steps 2-3** (Ref parsing) have no dependencies beyond step 1 and form the foundation for all later steps.
 - **Steps 4-5** (Cache) can be built in parallel with steps 2-3 since they're independent.
-- **Step 6-7** (Resolver) depends on step 2 (uses `%Eslr.Ref{}`).
+- **Step 6-7** (Resolver) depends on step 2 (uses `%Scriptlr.Ref{}`).
 - **Step 8** (Loader) depends on steps 4 and 6 (uses Cache and Resolver).
 - **Step 9** (Runner) depends on step 8 (receives loaded code/paths from Loader).
 - **Step 10** (Output) has no code dependencies and can be built at any point, but is used by steps 8, 9, and 11.
@@ -191,10 +191,10 @@ Suggested parallel tracks:
 
 ## Testing Strategy
 
-- **Unit tests** for `Eslr.Ref.parse/1` — pure function, extensive input coverage.
-- **Unit tests** for `Eslr.Cache` — use `tmp` dirs for isolation, test full CRUD lifecycle.
-- **Unit tests** for `Eslr.Resolver` — pure mapping from ref structs to dep specs.
-- **Integration tests** for `Eslr.CLI` — invoke `main/1` with various argv, assert output and exit codes.
+- **Unit tests** for `Scriptlr.Ref.parse/1` — pure function, extensive input coverage.
+- **Unit tests** for `Scriptlr.Cache` — use `tmp` dirs for isolation, test full CRUD lifecycle.
+- **Unit tests** for `Scriptlr.Resolver` — pure mapping from ref structs to dep specs.
+- **Integration tests** for `Scriptlr.CLI` — invoke `main/1` with various argv, assert output and exit codes.
 - **End-to-end test** with a local `.exs` script — create a temp script, run it through `elr`, verify output.
 - **Manual testing** with real Hex packages and GitHub repos after escript build.
 

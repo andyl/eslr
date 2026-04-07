@@ -1,4 +1,4 @@
-defmodule Eslr.Ref do
+defmodule Scriptlr.Ref do
   @moduledoc """
   Parses reference strings into structured types for scripts.
   """
@@ -16,7 +16,7 @@ defmodule Eslr.Ref do
         }
 
   @doc """
-  Parses a reference string into `{:ok, %Eslr.Ref{}}` or `{:error, reason}`.
+  Parses a reference string into `{:ok, %Scriptlr.Ref{}}` or `{:error, reason}`.
 
   Parse order:
   1. Starts with `https://` and ends with `.exs` → remote script

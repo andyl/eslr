@@ -1,4 +1,4 @@
-# Eslr
+# Scriptlr
 
 I like the npx utility, and wish to create an equivalent for the
 elixir ecosystem and leverages escripts and/or elixir scripts (exs /
