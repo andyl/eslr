@@ -2,14 +2,14 @@
 
 Load and run Elixir scripts (`.exs`) from git repos or direct URLs.  
 
-Pronounced `es-lr`, inspired by [npx](https://docs.npmjs.com/cli/v11/commands/npx), 
-built for Elixir. Just point `scriptlr` at a script reference and go.  
+Inspired by [npx](https://docs.npmjs.com/cli/v11/commands/npx), built for
+Elixir. Just point `scriptlr` at a script reference and go.  
 
 ## Installation
 
 ```bash
 > mix escript.install github:andyl/scriptlr          # install
-> export PATH="$HOME/.mix/escripts:$PATH"        # update $PATH
+> export PATH="$HOME/.mix/escripts:$PATH"            # update $PATH
 > scriptlr --help                                    # verify 
 > mix escript.install github:andyl/scriptlr --force  # update
 ```
@@ -19,8 +19,8 @@ built for Elixir. Just point `scriptlr` at a script reference and go.
 ```bash
 scriptlr <reference> [args...]
 ```
-| Src    | Example Command                                                         |
-|--------|-------------------------------------------------------------------------|
+| Src    | Example Command                                                             |
+|--------|-----------------------------------------------------------------------------|
 | GitHub | `scriptlr github:wojtekmach:benchee.exs`                                    |
 | URL    | `scriptlr https://raw.githubusercontent.com/user/repo/main/tool.exs --help` |
 | Local  | `scriptlr ./my_tool.exs --verbose`                                          |
@@ -74,8 +74,8 @@ Use `--no-cache` to bypass the cache and force a fresh load.
 
 ## Environment Variables
 
-| Variable         | Description                                |
-|------------------|--------------------------------------------|
+| Variable             | Description                                |
+|----------------------|--------------------------------------------|
 | `SCRIPTLR_CACHE_DIR` | Custom cache directory (overrides default) |
 | `SCRIPTLR_NO_COLOR`  | Disable colored output                     |
 
